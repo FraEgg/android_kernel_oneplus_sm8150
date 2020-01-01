@@ -742,10 +742,10 @@ void lim_diag_mgmt_rx_event_report(tpAniSirGlobal mac_ctx, void *mgmt_hdr,
 static inline void lim_diag_event_report(tpAniSirGlobal pMac, uint16_t
 		eventType, tpPESession pSessionEntry, uint16_t status,
 		uint16_t reasonCode) {}
-static inline void lim_diag_mgmt_tx_event_report(tpAniSirGlobal mac_ctx, void *mgmt_hdr,
+void lim_diag_mgmt_tx_event_report(tpAniSirGlobal mac_ctx, void *mgmt_hdr,
 		tpPESession session, uint16_t result_code,
 		uint16_t reason_code) {}
-static inline void lim_diag_mgmt_rx_event_report(tpAniSirGlobal mac_ctx, void *mgmt_hdr,
+void lim_diag_mgmt_rx_event_report(tpAniSirGlobal mac_ctx, void *mgmt_hdr,
 		tpPESession session, uint16_t result_code,
 		uint16_t reason_code) {}
 #endif /* FEATURE_WLAN_DIAG_SUPPORT */
@@ -1472,4 +1472,8 @@ static inline void lim_set_peer_twt_cap(tpPESession session,
 }
 #endif
 
+struct wlan_ies *
+hdd_get_self_disconnect_ies(tpAniSirGlobal mac_ctx, uint8_t vdev_id);
+
+void hdd_free_self_disconnect_ies(tpAniSirGlobal mac_ctx, uint8_t vdev_id);
 #endif /* __LIM_UTILS_H */

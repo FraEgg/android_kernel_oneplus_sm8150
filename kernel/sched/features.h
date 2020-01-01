@@ -96,6 +96,7 @@ SCHED_FEAT(WA_BIAS, true)
  * UtilEstimation. Use estimated CPU utilization.
  */
 SCHED_FEAT(UTIL_EST, true)
+SCHED_FEAT(UTIL_EST_FASTUP, true)
 
 /*
  * Energy aware scheduling. Use platform energy model to guide scheduling
@@ -124,12 +125,3 @@ SCHED_FEAT(ENERGY_AWARE, false)
 SCHED_FEAT(EAS_PREFER_IDLE, true)
 SCHED_FEAT(FIND_BEST_TARGET, true)
 SCHED_FEAT(FBT_STRICT_ORDER, false)
-
-/*
- * If the sync flag is set but ignored, prefer to
- * select cpu in the same cluster as current. So
- * if current is a big cpu and sync is set, indicate
- * that the selection algorithm for a boosted task
- * should be used.
- */
-SCHED_FEAT(SYNC_BOOST, true)

@@ -35,6 +35,7 @@
 #include "mac_trace.h"
 #include "wlan_policy_mgr_api.h"
 
+#ifdef WLAN_DEBUG
 static const char *lfr_get_config_item_string(uint8_t reason)
 {
 	switch (reason) {
@@ -48,6 +49,7 @@ static const char *lfr_get_config_item_string(uint8_t reason)
 		return "unknown";
 	}
 }
+#endif
 
 static void csr_neighbor_roam_reset_channel_info(tpCsrNeighborRoamChannelInfo
 						 rChInfo);
@@ -992,6 +994,8 @@ static void csr_neighbor_roam_info_ctx_init(
 		ngbr_roam_info->cfgParams.nRoamBmissFinalBcnt;
 	ngbr_roam_info->currentRoamBeaconRssiWeight =
 		ngbr_roam_info->cfgParams.nRoamBeaconRssiWeight;
+	ngbr_roam_info->cfgParams.enable_scoring_for_roam =
+		pMac->roam.configParam.bss_score_params.enable_scoring_for_roam;
 
 	/*
 	 * Now we can clear the preauthDone that
@@ -1282,9 +1286,6 @@ QDF_STATUS csr_neighbor_roam_init(tpAniSirGlobal pMac, uint8_t sessionId)
 	pNeighborRoamInfo->cfgParams.full_roam_scan_period =
 		pMac->roam.configParam.neighborRoamConfig.
 		full_roam_scan_period;
-	pNeighborRoamInfo->cfgParams.enable_scoring_for_roam =
-		pMac->roam.configParam.neighborRoamConfig.
-		enable_scoring_for_roam;
 
 	specific_chan_info = &pNeighborRoamInfo->cfgParams.specific_chan_info;
 	specific_chan_info->numOfChannels =

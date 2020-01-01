@@ -62,6 +62,7 @@
 #include "wlan_ipa_ucfg_api.h"
 #include "wlan_hdd_scan.h"
 #include "wlan_hdd_bcn_recv.h"
+#include "wlan_mlme_main.h"
 
 #include "wlan_hdd_nud_tracking.h"
 /* These are needed to recognize WPA and RSN suite types */
@@ -1433,18 +1434,9 @@ static void hdd_send_association_event(struct net_device *dev,
 				       pCsrRoamInfo->tdls_prohibited,
 				       adapter->vdev);
 
-#ifdef MSM_PLATFORM
 		/* start timer in sta/p2p_cli */
-		spin_lock_bh(&hdd_ctx->bus_bw_lock);
-		adapter->prev_tx_packets = adapter->stats.tx_packets;
-		adapter->prev_rx_packets = adapter->stats.rx_packets;
-		cdp_get_intra_bss_fwd_pkts_count(
-			cds_get_context(QDF_MODULE_ID_SOC), adapter->session_id,
-			&adapter->prev_fwd_tx_packets,
-			&adapter->prev_fwd_rx_packets);
-		spin_unlock_bh(&hdd_ctx->bus_bw_lock);
+		hdd_bus_bw_compute_prev_txrx_stats(adapter);
 		hdd_bus_bw_compute_timer_start(hdd_ctx);
-#endif
 	} else if (eConnectionState_IbssConnected ==    /* IBss Associated */
 			sta_ctx->conn_info.connState) {
 		policy_mgr_update_connection_info(hdd_ctx->psoc,
@@ -1487,16 +1479,9 @@ static void hdd_send_association_event(struct net_device *dev,
 					  false,
 					  adapter->vdev);
 
-#ifdef MSM_PLATFORM
 		/* stop timer in sta/p2p_cli */
-		spin_lock_bh(&hdd_ctx->bus_bw_lock);
-		adapter->prev_tx_packets = 0;
-		adapter->prev_rx_packets = 0;
-		adapter->prev_fwd_tx_packets = 0;
-		adapter->prev_fwd_rx_packets = 0;
-		spin_unlock_bh(&hdd_ctx->bus_bw_lock);
+		hdd_bus_bw_compute_reset_prev_txrx_stats(adapter);
 		hdd_bus_bw_compute_timer_try_stop(hdd_ctx);
-#endif
 	}
 	hdd_ipa_set_tx_flow_info();
 
@@ -1719,6 +1704,7 @@ static QDF_STATUS hdd_dis_connect_handler(struct hdd_adapter *adapter,
 	uint8_t sta_id;
 	bool sendDisconInd = true;
 	mac_handle_t mac_handle;
+	struct wlan_ies disconnect_ies = {0};
 
 	if (dev == NULL) {
 		hdd_err("net_dev is released return");
@@ -1781,6 +1767,12 @@ static QDF_STATUS hdd_dis_connect_handler(struct hdd_adapter *adapter,
 		 * by kernel
 		 */
 		if (sendDisconInd) {
+			if (roam_info && roam_info->disconnect_ies) {
+				disconnect_ies.data =
+					roam_info->disconnect_ies->data;
+				disconnect_ies.len =
+					roam_info->disconnect_ies->len;
+			}
 			/*
 			 * To avoid wpa_supplicant sending "HANGED" CMD
 			 * to ICS UI.
@@ -1792,12 +1784,15 @@ static QDF_STATUS hdd_dis_connect_handler(struct hdd_adapter *adapter,
 						roam_info->rxRssi);
 				wlan_hdd_cfg80211_indicate_disconnect(
 							dev, false,
-							roam_info->reasonCode);
+							roam_info->reasonCode,
+							disconnect_ies.data,
+							disconnect_ies.len);
 			} else {
 				wlan_hdd_cfg80211_indicate_disconnect(
 							dev, false,
-							WLAN_REASON_UNSPECIFIED
-							);
+							WLAN_REASON_UNSPECIFIED,
+							disconnect_ies.data,
+							disconnect_ies.len);
 			}
 
 			hdd_debug("sent disconnected event to nl80211, reason code %d",
@@ -2177,10 +2172,8 @@ QDF_STATUS hdd_roam_register_sta(struct hdd_adapter *adapter,
 		hdd_conn_set_authenticated(adapter, true);
 		hdd_objmgr_set_peer_mlme_auth_state(adapter->vdev, true);
 	} else {
-#ifdef WLAN_DEBUG
 		hdd_debug("ULA auth StaId= %d. Changing TL state to CONNECTED at Join time",
 			 sta_ctx->conn_info.staId[0]);
-#endif
 		qdf_status =
 			hdd_change_peer_state(adapter, staDesc.sta_id,
 						OL_TXRX_PEER_STATE_CONN,
